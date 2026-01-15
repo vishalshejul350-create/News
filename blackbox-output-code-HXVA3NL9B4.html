@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI News</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #121212;
+            color: #ffffff;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        header {
+            background-color: #1e1e1e;
+            padding: 1rem;
+            text-align: center;
+            font-size: 2rem;
+            font-weight: bold;
+        }
+        .selectors {
+            background-color: #2a2a2a;
+            padding: 0.5rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        .selectors select, .selectors button {
+            background-color: #333333;
+            color: #ffffff;
+            border: none;
+            padding: 0.5rem;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .selectors button:hover, .selectors button.active {
+            background-color: #555555;
+        }
+        nav {
+            background-color: #2a2a2a;
+            padding: 0.5rem;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        nav button {
+            background-color: #333333;
+            color: #ffffff;
+            border: none;
+            padding: 0.5rem 1rem;
+            margin: 0.25rem;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+        nav button:hover, nav button.active {
+            background-color: #555555;
+        }
+        main {
+            flex: 1;
+            padding: 1rem;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1rem;
+        }
+        .article {
+            background-color: #1e1e1e;
+            border-radius: 8px;
+            padding: 1rem;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+        }
+        .article img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 5px;
+            margin-bottom: 0.5rem;
+        }
+        .article h3 {
+            margin: 0 0 1rem 0;  /* Increased margin-bottom to prevent overlapping */
+            font-size: 1.2rem;
+            line-height: 1.4;  /* Added line-height for better readability */
+        }
+        .article p {
+            margin: 0 0 0.5rem 0;
+            flex-grow: 1;
+        }
+        .article a {
+            color: #4fc3f7;
+            text-decoration: none;
+            align-self: flex-start;
+        }
+        .article a:hover {
+            text-decoration: underline;
+        }
+        .loading {
+            text-align: center;
+            font-size: 1.5rem;
+            color: #4fc3f7;
+        }
+        @media (max-width: 600px) {
+            header {
+                font-size: 1.5rem;
+            }
+            .selectors {
+                flex-direction: column;
+            }
+            nav {
+                flex-direction: column;
+                align-items: center;
+            }
+            main {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>AI News</header>
+    <div class="selectors">
+        <select id="country-select">
+            <option value="us">US</option>
+            <option value="in">India</option>
+        </select>
+        <button id="lang-en" class="active">English</button>
+        <button id="lang-hi">Hindi</button>
+        <button id="lang-mr">Marathi</button>
+    </div>
+    <nav>
+        <button id="breaking" class="active">Breaking</button>
+        <button id="technology">Technology</button>
+        <button id="business">Business</button>
+        <button id="sports">Sports</button>
+    </nav>
+    <main id="news-container">
+        <!-- News articles will be loaded here -->
+    </main>
+    <script>
+        const apiKey = '639840f22a014bdfb1f37a277ef91eca';
+        const newsContainer = document.getElementById('news-container');
+        const countrySelect = document.getElementById('country-select');
+        const langButtons = document.querySelectorAll('.selectors button[id^="lang-"]');
+        const categoryButtons = document.querySelectorAll('nav button');
+
+        let currentCountry = 'us';
+        let currentLang = 'en';
+
+        // Function to get date 10 hours ago in ISO format
+        function getTenHoursAgo() {
+            const now = new Date();
+            now.setHours(now.getHours() - 10);
+            return now.toISOString();
+        }
+
+        // Function to summarize text (simple truncation)
+        function summarize(text) {
+            if (!text) return 'No summary available.';
+            return text.length > 100 ? text.substring(0, 100) + '...' : text;
+        }
+
+        // Function to fetch and display news
+        async function fetchNews(category) {
+            newsContainer.innerHTML = '<div class="loading">Loading news...</div>';
+            let url;
+
+            const fromDate = getTenHoursAgo();  // News from 10 hours ago
+
+            if (currentLang === 'en') {
+                // Use top-headlines for English (country-based), but switch to everything for time filter
+                let query = category === 'breaking' ? '' : category;
+                url = `https://newsapi.org/v2/everything?q=${encodeURIComponent(query)}&from=${fromDate}&language=en&sortBy=publishedAt&apiKey=${apiKey}`;
+                if (currentCountry === 'us') {
+                    url += '&domains=nytimes.com,bbc.com,cnn.com';  // Example US sources
+                } else if (currentCountry === 'in') {
+                    url += '&domains=hindustantimes.com,timesofindia.indiatimes.com';  // Example India sources
+                }
+            } else {
+                // Use everything for Hindi/Marathi (language-based)
+                let langParam = currentLang === 'hi' ? 'hi' : 'hi';  // Marathi falls back to Hindi
+                let query = currentCountry === 'in' ? 'india' : 'us';
+                if (category !== 'breaking') {
+                    query += ` ${category}`;
+                }
+                url = `https://newsapi.org/v2/everything?q=${encodeURIComponent(query)}&from=${fromDate}&language=${langParam}&sortBy=publishedAt&apiKey=${apiKey}`;
+            }
+
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                if (data.status === 'ok') {
+                    displayNews(data.articles);
+                } else {
+                    newsContainer.innerHTML = '<p>Error: ' + data.message + '</p>';
+                }
+            } catch (error) {
+                console.error('Error fetching news:', error);
+                newsContainer.innerHTML = '<p>Error loading news. Please try again later.</p>';
+            }
+        }
+
+        // Function to display news articles
+        function displayNews(articles) {
+            newsContainer.innerHTML = '';
+            if (!articles || articles.length === 0) {
+                newsContainer.innerHTML = '<p>No news available for the selected options.</p>';
+                return;
+            }
+            articles.slice(0, 20).forEach(article => {  // Limit to 20 for performance
+                const articleDiv = document.createElement('div');
+                articleDiv.className = 'article';
+
+                const img = article.urlToImage ? `<img src="${article.urlToImage}" alt="${article.title}">` : '';
+                const summary = summarize(article.description || article.content);
+
+                articleDiv.innerHTML = `
+                    ${img}
+                    <h3>${article.title}</h3>
+                    <p><strong>AI Summary:</strong> ${summary}</p>
+                    <a href="${article.url}" target="_blank">Read More</a>
+                `;
+
+                newsContainer.appendChild(articleDiv);
+            });
+        }
+
+        // Event listeners for country select
+        countrySelect.addEventListener('change', () => {
+            currentCountry = countrySelect.value;
+            fetchNews(document.querySelector('nav button.active').id);
+        });
+
+        // Event listeners for language buttons
+        langButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                langButtons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                currentLang = button.id.split('-')[1];  // 'en', 'hi', or 'mr'
+                fetchNews(document.querySelector('nav button.active').id);
+            });
+        });
+
+        // Event listeners for category buttons
+        categoryButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                categoryButtons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                fetchNews(button.id);
+            });
+        });
+
+        // Load breaking news on page load
+        fetchNews('breaking');
+    </script>
+</body>
+</html>
