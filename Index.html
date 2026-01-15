@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI News</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #121212;
+            color: #ffffff;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        header {
+            background-color: #1e1e1e;
+            padding: 1rem;
+            text-align: center;
+            font-size: 2rem;
+            font-weight: bold;
+        }
+        nav {
+            background-color: #2a2a2a;
+            padding: 0.5rem;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        nav button {
+            background-color: #333333;
+            color: #ffffff;
+            border: none;
+            padding: 0.5rem 1rem;
+            margin: 0.25rem;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+        nav button:hover, nav button.active {
+            background-color: #555555;
+        }
+        main {
+            flex: 1;
+            padding: 1rem;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1rem;
+        }
+        .article {
+            background-color: #1e1e1e;
+            border-radius: 8px;
+            padding: 1rem;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+        }
+        .article img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 5px;
+            margin-bottom: 0.5rem;
+        }
+        .article h3 {
+            margin: 0 0 0.5rem 0;
+            font-size: 1.2rem;
+        }
+        .article p {
+            margin: 0 0 0.5rem 0;
+            flex-grow: 1;
+        }
+        .article a {
+            color: #4fc3f7;
+            text-decoration: none;
+            align-self: flex-start;
+        }
+        .article a:hover {
+            text-decoration: underline;
+        }
+        @media (max-width: 600px) {
+            header {
+                font-size: 1.5rem;
+            }
+            nav {
+                flex-direction: column;
+                align-items: center;
+            }
+            main {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>AI News</header>
+    <nav>
+        <button id="breaking" class="active">Breaking</button>
+        <button id="technology">Technology</button>
+        <button id="business">Business</button>
+        <button id="sports">Sports</button>
+    </nav>
+    <main id="news-container">
+        <!-- News articles will be loaded here -->
+    </main>
+    <script>
+        const apiKey = '639840f22a014bdfb1f37a277ef91eca';
+        const newsContainer = document.getElementById('news-container');
+        const buttons = document.querySelectorAll('nav button');
+
+        // Function to summarize text (simple truncation as "AI summary")
+        function summarize(text) {
+            if (!text) return 'No summary available.';
+            return text.length > 100 ? text.substring(0, 100) + '...' : text;
+        }
+
+        // Function to fetch and display news
+        async function fetchNews(category) {
+            let url;
+            if (category === 'breaking') {
+                url = `https://newsapi.org/v2/top-headlines?country=us&apiKey=${apiKey}`;
+            } else {
+                url = `https://newsapi.org/v2/top-headlines?country=us&category=${category}&apiKey=${apiKey}`;
+            }
+
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                displayNews(data.articles);
+            } catch (error) {
+                console.error('Error fetching news:', error);
+                newsContainer.innerHTML = '<p>Error loading news. Please try again later.</p>';
+            }
+        }
+
+        // Function to display news articles
+        function displayNews(articles) {
+            newsContainer.innerHTML = '';
+            articles.forEach(article => {
+                const articleDiv = document.createElement('div');
+                articleDiv.className = 'article';
+
+                const img = article.urlToImage ? `<img src="${article.urlToImage}" alt="${article.title}">` : '';
+                const summary = summarize(article.description || article.content);
+
+                articleDiv.innerHTML = `
+                    ${img}
+                    <h3>${article.title}</h3>
+                    <p><strong>AI Summary:</strong> ${summary}</p>
+                    <a href="${article.url}" target="_blank">Read More</a>
+                `;
+
+                newsContainer.appendChild(articleDiv);
+            });
+        }
+
+        // Event listeners for category buttons
+        buttons.forEach(button => {
+            button.addEventListener('click', () => {
+                buttons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                fetchNews(button.id);
+            });
+        });
+
+        // Load breaking news on page load
+        fetchNews('breaking');
+    </script>
+</body>
+</html>
